@@ -3,7 +3,6 @@ false = False
 
 from lib import ensure_package_installed, install_packages, vprint
 from typing import List, Callable, Dict, Optional, Union, TypedDict
-import time
 import json
 
 packages = ["openai==1.9.0"]
@@ -12,6 +11,7 @@ install_packages(packages_not_installed, verbose=True)
 
 from openai import OpenAI
 import openai.types.beta as openai_types
+from openai.types.beta.threads.run_submit_tool_outputs_params import ToolOutput
 from openai.types.beta.threads import ThreadMessage, Run
 
 
@@ -35,11 +35,6 @@ python_to_openai_types = {
     "frozenset": "list",
     "NoneType": "null"
 }
-class ToolOutput(TypedDict):
-    """A wrapper for the tool output."""
-    tool_call_id: str
-    output: str
-
 def hello_world(input: str) -> Dict[str, str]:
     """
     This is a dummy function to test the library.
@@ -50,7 +45,7 @@ def hello_world(input: str) -> Dict[str, str]:
     return {"output": input}
 
 
-def create_client(api_key: str) -> OpenAI:
+def create_client(api_key: str, verbose: bool=False) -> OpenAI:
     """
     Context:
         This creates a client which you can use for all the gpt related functions.
@@ -65,10 +60,11 @@ def create_client(api_key: str) -> OpenAI:
         https://platform.openai.com/docs/assistants/overview
     """
     client = OpenAI(api_key=api_key)
+    vprint(f'[INFO] - Created client {client}', verbose)
     return client
 
 
-def convert_tool_to_json(tool: Callable, verbose: bool=False, deliminer: str = '-----\n') -> Dict[str, str]:
+def convert_tool_to_json(tool: Callable, verbose: bool=False, deliminer: str = '-----\n') -> Dict:
     """
     Context:
         It is hard to manage a massive amount of tools and their documentation, hence we are making docstrings the source of truth for our tools.
@@ -152,7 +148,7 @@ def convert_tool_to_json(tool: Callable, verbose: bool=False, deliminer: str = '
     return function_output
 
 
-def convert_tools_to_json(tools: List[Callable]) -> List:
+def convert_tools_to_json(tools: List[Callable], verbose: bool=False) -> List:
     """
     Context:
         It is hard to manage a massive amount of tools and their documentation, hence we are making docstrings the source of truth for our tools.
@@ -173,6 +169,7 @@ def convert_tools_to_json(tools: List[Callable]) -> List:
     Reference:
         https://platform.openai.com/docs/guides/function-calling
     """
+    vprint('[INFO] - Converting tools to json', verbose)
     return [convert_tool_to_json(tool) for tool in tools]
 
 
@@ -203,10 +200,11 @@ def create_assistant(name: str, instructions: str, tools: List[Callable], model:
         model=model
     )
 
+    vprint(f'[INFO] - Created assistant {assistant}', verbose)
     return assistant
 
 
-def retrieve_assistant(assistant_id: str, client: OpenAI) -> ASSISTANT: 
+def retrieve_assistant(assistant_id: str, client: OpenAI, verbose: bool=False) -> ASSISTANT: 
     """
     Context:
         This function retrieves an assistant using its id.
@@ -220,10 +218,12 @@ def retrieve_assistant(assistant_id: str, client: OpenAI) -> ASSISTANT:
     Reference:
         https://platform.openai.com/docs/assistants/overview/step-1-create-an-assistant
     """
+    
+    vprint(f"[INFO] - Retrieving assistant {assistant_id}", verbose)
     return client.beta.assistants.retrieve(assistant_id)
 
 
-def delete_assistant(assistant: ASSISTANT, client: OpenAI) -> bool:
+def delete_assistant(assistant: ASSISTANT, client: OpenAI, verbose: bool=False) -> bool:
     """
     Context:
         This function deletes an assistant using its Assistant Object.
@@ -239,13 +239,14 @@ def delete_assistant(assistant: ASSISTANT, client: OpenAI) -> bool:
     """
     
     try:
+        vprint(f'[INFO] - Deleting assistant {assistant}', verbose)
         return client.beta.assistants.delete(assistant.id).deleted
     except Exception as e:
-        vprint(f'[ERROR] - {e}')
+        vprint(f'[ERROR] - {e}', verbose)
         return False
     
 
-def list_assistants(client: OpenAI) -> List[ASSISTANT]:
+def list_assistants(client: OpenAI, verbose: bool=False) -> List[ASSISTANT]:
     """
     Context:
         This function lists all the assistants for the openai organization / api key you used.
@@ -260,13 +261,14 @@ def list_assistants(client: OpenAI) -> List[ASSISTANT]:
         https://platform.openai.com/docs/assistants/overview/step-1-create-an-assistant
     """
     try:
+        vprint(f'[INFO] - Listing assistants', verbose)
         return client.beta.assistants.list(limit=100).data
     except Exception as e:
-        vprint(f'[ERROR] - {e}')
+        vprint(f'[ERROR] - {e}', verbose)
         return []
 
 
-def create_thread(metadata: Dict[str, str], client: OpenAI) -> Optional[THREAD]:
+def create_thread(metadata: Dict[str, str], client: OpenAI, verbose: bool=False) -> Optional[THREAD]:
     """
     Context:
         This function creates a thread to use for messaging.
@@ -281,13 +283,14 @@ def create_thread(metadata: Dict[str, str], client: OpenAI) -> Optional[THREAD]:
         https://platform.openai.com/docs/assistants/overview/step-2-create-a-thread
     """
     try:
+        vprint(f'[INFO] - Creating thread with metadata {metadata}', verbose)
         return client.beta.threads.create(metadata=metadata)
     except Exception as e:
-        vprint(f'[ERROR] - {e}')
+        vprint(f'[ERROR] - {e}', verbose)
         return None
 
 
-def retrieve_thread(thread_id: str, client: OpenAI) -> Optional[THREAD]:
+def retrieve_thread(thread_id: str, client: OpenAI, verbose: bool=False) -> Optional[THREAD]:
     """
     Context:
         This function retrieves a thread.
@@ -302,13 +305,14 @@ def retrieve_thread(thread_id: str, client: OpenAI) -> Optional[THREAD]:
         https://platform.openai.com/docs/assistants/overview/step-2-create-a-thread
     """
     try:
+        vprint(f'[INFO] - Retrieving thread {thread_id}', verbose)
         return client.beta.threads.retrieve(thread_id)
     except Exception as e:
-        vprint(f'[ERROR] - {e}', true)
+        vprint(f'[ERROR] - {e}', verbose)
         return None
 
 
-def delete_thread(thread: THREAD, client: OpenAI) -> bool:
+def delete_thread(thread: THREAD, client: OpenAI, verbose: bool=False) -> bool:
     """
     Context:
         This function deletes a thread.
@@ -323,14 +327,15 @@ def delete_thread(thread: THREAD, client: OpenAI) -> bool:
         https://platform.openai.com/docs/assistants/overview/step-2-create-a-thread
     """
     try:
+        vprint(f'[INFO] - Deleting thread {thread}', verbose)
         return client.beta.threads.delete(thread.id).deleted
     except Exception as e:
-        vprint(f'[ERROR] - {e}')
+        vprint(f'[ERROR] - {e}', verbose)
         return False
 
 
 
-def modify_thread_metadata(thread: THREAD, metadata: Dict[str, str], client: OpenAI) -> Optional[THREAD]:
+def modify_thread_metadata(thread: THREAD, metadata: Dict[str, str], client: OpenAI, verbose: bool=False) -> Optional[THREAD]:
     """
     Context:
         This function modifies a thread's metadata.
@@ -345,14 +350,15 @@ def modify_thread_metadata(thread: THREAD, metadata: Dict[str, str], client: Ope
         https://platform.openai.com/docs/assistants/overview/step-2-create-a-thread
     """
     try:
+        vprint(f'[INFO] - Modifying thread {thread} with metadata {metadata}', verbose)
         return client.beta.threads.update(thread.id, metadata=metadata)
     except Exception as e:
-        vprint(f'[ERROR] - {e}')
+        vprint(f'[ERROR] - {e}', verbose)
         return None
 
 
 
-def create_thread_message(thread: THREAD, role: str, content: str, client: OpenAI) -> Optional[THREAD_MESSAGE]:
+def create_thread_message(thread: THREAD, role: str, content: str, client: OpenAI, verbose: bool=False) -> Optional[THREAD_MESSAGE]:
     """
     Context:
         This function appends an ThreadMessage to an openai thread
@@ -373,13 +379,16 @@ def create_thread_message(thread: THREAD, role: str, content: str, client: OpenA
                 role='user',
                 content=f"SYSTEM MESSAGE::::This message was sent from {role}::::\n" + content
             )
+
+        vprint(f'[INFO] - Created message {message}', verbose)
         return message
     except Exception as e:
+        vprint(f'[ERROR] - {e}', verbose)
         return None
 
 
 
-def retrieve_thread_messages(thread: THREAD, client: OpenAI, after: Optional[str]=None) -> List[THREAD_MESSAGE]:
+def retrieve_thread_messages(thread: THREAD, client: OpenAI, after: Optional[str]=None, verbose: bool=False) -> List[THREAD_MESSAGE]:
     """
     Context:
         This function retrieves all messages from an openai thread ( Or the after id you define)
@@ -395,15 +404,17 @@ def retrieve_thread_messages(thread: THREAD, client: OpenAI, after: Optional[str
     """
     try:
         if after:
+            vprint(f'[INFO] - Retrieving messages from thread {thread} after {after}', verbose)
             return client.beta.threads.messages.list(thread_id=thread.id, limit=100000000000000, after=after).data
         else:
+            vprint(f'[INFO] - Retrieving messages from thread {thread}', verbose)
             return client.beta.threads.messages.list(thread_id=thread.id).data
     except Exception as e:
-        print(e)
+        vprint(f'[ERROR] - {e}', verbose)
         return []
 
 
-def run_thread(thread: THREAD, assistant: ASSISTANT, client: OpenAI) -> Optional[RUN]:
+def run_thread(thread: THREAD, assistant: ASSISTANT, client: OpenAI, verbose: bool=False) -> Optional[RUN]:
     """
     Context:
         An openai thread needs to be forced to run in order for it to give a response, this gives more control.
@@ -422,13 +433,15 @@ def run_thread(thread: THREAD, assistant: ASSISTANT, client: OpenAI) -> Optional
           thread_id=thread.id,
           assistant_id=assistant.id,
         )
+
+        vprint(f'[INFO] - Created run {run}', verbose)
         return run
     except Exception as e:
-        vprint(f'[ERROR] - {e}', True)
+        vprint(f'[ERROR] - {e}', verbose)
         return None
 
 
-def retrieve_run(run: Optional[RUN], thread: THREAD, client: OpenAI) -> Optional[RUN]:
+def retrieve_run(run: Optional[RUN], thread: THREAD, client: OpenAI, verbose: bool=False) -> Optional[RUN]:
     """
     Context:
         This function retrieves the run object.
@@ -443,16 +456,18 @@ def retrieve_run(run: Optional[RUN], thread: THREAD, client: OpenAI) -> Optional
         https://platform.openai.com/docs/assistants/overview/step-5-check-the-run-status
     """
     if not run:
+        vprint(f'[ERROR] - Run is None', verbose)
         return None
 
     try:
+        vprint(f'[INFO] - Retrieving run {run}', verbose)
         return client.beta.threads.runs.retrieve(run_id=run.id, thread_id=thread.id)
     except Exception as e:
-        vprint(f'[ERROR] - {e}')
+        vprint(f'[ERROR] - {e}', verbose)
         return None
 
 
-def cancel_run(run: RUN, thread: THREAD, client: OpenAI) -> Optional[RUN]:
+def cancel_run(run: RUN, thread: THREAD, client: OpenAI, verbose: bool=False) -> Optional[RUN]:
     """
     Context:
         This function cancels the run object.
@@ -467,14 +482,15 @@ def cancel_run(run: RUN, thread: THREAD, client: OpenAI) -> Optional[RUN]:
         https://platform.openai.com/docs/assistants/overview/step-5-check-the-run-status
     """
     try:
+        vprint(f'[INFO] - Cancelling run {run}', verbose)
         return client.beta.threads.runs.cancel(run_id=run.id, thread_id=thread.id)
     except Exception as e:
-        vprint(f'[ERROR] - {e}')
+        vprint(f'[ERROR] - {e}', verbose)
         return None
 
 
 
-def submit_function_outputs(thread: THREAD, run: RUN, client: OpenAI, tool_outputs: List[Dict]) -> Run:
+def submit_function_outputs(thread: THREAD, run: RUN, client: OpenAI, tool_outputs: List[ToolOutput], verbose: bool=False) -> Run:
     """
     Context:
         This function submits the function outputs to the thread.
@@ -493,11 +509,12 @@ def submit_function_outputs(thread: THREAD, run: RUN, client: OpenAI, tool_outpu
         run_id=run.id,
         tool_outputs=tool_outputs
     )
-
+    
+    vprint(f'[INFO] - Submitted run {submit_run}', verbose)
     return submit_run
 
 
-def run_run_functions(thread: THREAD, run: Optional[RUN], functions: List[Callable], client: OpenAI):
+def run_run_functions(thread: THREAD, run: Optional[RUN], functions: List[Callable], client: OpenAI, verbose: bool=False):
     """
     Context:
         This function runs the 3rd party functions you have added.
@@ -512,11 +529,12 @@ def run_run_functions(thread: THREAD, run: Optional[RUN], functions: List[Callab
         https://platform.openai.com/docs/guides/function-calling
     """
     if not run:
+        vprint(f'[ERROR] - Run is None', verbose)
         return None
 
     if run.required_action and run.required_action.type == 'submit_tool_outputs':
         openai_funcs = run.required_action.submit_tool_outputs
-        tool_outputs = []
+        tool_outputs: List[ToolOutput] = []
         function_names_objs = {f.__name__: f for f in functions}
         for function in openai_funcs.tool_calls:
             if not function.function or function.function.arguments is None:
@@ -528,10 +546,12 @@ def run_run_functions(thread: THREAD, run: Optional[RUN], functions: List[Callab
             ))
 
             tool_outputs.append(tool_output)
+
+        vprint(f"Submitting tool outputs {tool_outputs}", verbose)
         submit_function_outputs(thread, run, client, tool_outputs)
 
 
-def manage_run_state(run: Optional[RUN]) -> Union[bool, str, None]:
+def manage_run_state(run: Optional[RUN], verbose: bool=False) -> Union[bool, str, None]:
     """
     Context:
         This is basically a massive switch statement to determine what to do with the run.
@@ -546,6 +566,7 @@ def manage_run_state(run: Optional[RUN]) -> Union[bool, str, None]:
         NONE
     """
     if not run:
+        vprint(f'[ERROR] - Run is None', verbose)
         return False
 
     run_state = run.status
@@ -563,10 +584,11 @@ def manage_run_state(run: Optional[RUN]) -> Union[bool, str, None]:
         'cancelled': None
     }
     
+    vprint(f'[INFO] - Run State {run_state}', verbose)
     return switcher.get(run_state)
  
 
-def convert_json_to_text(json: Dict) -> str:
+def convert_json_to_text(json: Dict, verbose: bool=False) -> str:
     """
     Context:
         This function converts a json to human readable text.
@@ -577,6 +599,7 @@ def convert_json_to_text(json: Dict) -> str:
     Output:
         convert_json_to_yaml({"name": "Test"})
     """
-
+    
+    vprint(f'[INFO] - Converting json to text {json}', verbose)
     return '\n'.join([f"{key}: {value if type(value) != 'dict' else convert_json_to_text(value)}" for key, value in json.items()])
 
