@@ -304,7 +304,7 @@ def retrieve_thread(thread_id: str, client: OpenAI) -> Optional[THREAD]:
     try:
         return client.beta.threads.retrieve(thread_id)
     except Exception as e:
-        vprint(f'[ERROR] - {e}')
+        vprint(f'[ERROR] - {e}', true)
         return None
 
 
@@ -329,6 +329,7 @@ def delete_thread(thread: THREAD, client: OpenAI) -> bool:
         return False
 
 
+
 def modify_thread_metadata(thread: THREAD, metadata: Dict[str, str], client: OpenAI) -> Optional[THREAD]:
     """
     Context:
@@ -348,6 +349,7 @@ def modify_thread_metadata(thread: THREAD, metadata: Dict[str, str], client: Ope
     except Exception as e:
         vprint(f'[ERROR] - {e}')
         return None
+
 
 
 def create_thread_message(thread: THREAD, role: str, content: str, client: OpenAI) -> Optional[THREAD_MESSAGE]:
@@ -374,6 +376,7 @@ def create_thread_message(thread: THREAD, role: str, content: str, client: OpenA
         return message
     except Exception as e:
         return None
+
 
 
 def retrieve_thread_messages(thread: THREAD, client: OpenAI, after: Optional[str]=None) -> List[THREAD_MESSAGE]:
@@ -447,6 +450,7 @@ def retrieve_run(run: Optional[RUN], thread: THREAD, client: OpenAI) -> Optional
     except Exception as e:
         vprint(f'[ERROR] - {e}')
         return None
+
 
 def cancel_run(run: RUN, thread: THREAD, client: OpenAI) -> Optional[RUN]:
     """
@@ -575,6 +579,4 @@ def convert_json_to_text(json: Dict) -> str:
     """
 
     return '\n'.join([f"{key}: {value if type(value) != 'dict' else convert_json_to_text(value)}" for key, value in json.items()])
-
-
 
