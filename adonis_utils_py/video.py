@@ -1,4 +1,4 @@
-from lib import ensure_package_installed, install_packages
+from lib import ensure_package_installed, install_packages, ensure_system_dependency_installed, install_3rd_party_dependencies
 
 def download_youtube_video(url: str):
     """
@@ -59,6 +59,9 @@ def video2mp3(video_file, output_ext="mp3"):
         - convert mp4 to mp3 ffmpeg
         - convert mp4 to mp3 linux
     """
+    uninstalled_deps = ensure_system_dependency_installed(['ffmpeg'], verbose=True)
+    install_3rd_party_dependencies(uninstalled_deps, verbose=True)
+
     import os
     import subprocess
 

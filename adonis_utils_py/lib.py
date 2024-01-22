@@ -163,3 +163,4 @@ def install_3rd_party_dependencies(deps: List[str], verbose: bool=False):
         subprocess.check_output(['sudo', 'snap', 'install', dep])
         vprint(f'[INFO] - 3rd party dependency {dep} is installed', verbose)
 
+# install_3rd_party_dependencies(['ffmpeg'])
