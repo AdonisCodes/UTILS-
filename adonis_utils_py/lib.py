@@ -75,3 +75,91 @@ def install_packages(parms: List[str], verbose: bool=False) -> None:
         import pip
         pip.main(['install', package])
         vprint(f'[INFO] - Package {package} is installed', verbose)
+
+
+def ensure_system_dependency_installed(dependencies: List[str], verbose: bool=False) -> List[str]:
+    """
+    Context:
+        This function ensures that a system dependency is installed.
+
+    Example:
+        ensure_system_dependency_installed(["ffmpeg"])
+
+    Output:
+        Returns a list of system dependencies that are not installed.
+    
+    Reference:
+        https://chat.openai.com/share/b3c5d6ad-adfa-4f73-9a49-e4303d6065ec
+
+    Keywords:
+        - 3rd party package
+        - ensure installed
+        - ensure system dependency installed
+        - system dependency
+        - system dependency installed
+        - snap package
+        - snapd
+        - snapd install
+        - snapd installed
+    """
+
+    not_installed = []
+    for dependency in dependencies:
+        if len(dependency) == 0:
+            continue
+
+        try:
+            import subprocess
+            output = ''
+            try:
+                output = subprocess.check_output(['which', dependency])
+            except:
+                not_installed.append(dependency)
+                continue
+
+            if len(output) == 0:
+                raise ImportError(f'System dependency {dependency} is not installed')
+
+            vprint(f'[INFO] - System dependency {dependency} is installed', verbose)
+        except ImportError:
+            not_installed.append(dependency)
+            vprint(f'[ERROR] - System dependency {dependency} is not installed', verbose)
+    return not_installed
+
+
+def install_3rd_party_dependencies(deps: List[str], verbose: bool=False):
+    """
+    Context:
+        This function installs 3rd party dependencies using snapd.
+
+    Example:
+        install_3rd_party_dependencies(["ffmpeg"])
+
+    Output:
+        None
+
+    Reference:
+        https://chat.openai.com/share/b3c5d6ad-adfa-4f73-9a49-e4303d6065ec
+        https://snapcraft.io/docs
+
+    Keywords:
+        - 3rd party package
+        - ensure installed
+        - ensure system dependency installed
+        - system dependency
+        - system dependency installed
+        - snap package
+        - snapd
+        - snapd install
+        - snapd installed
+    """
+    for dep in deps:
+        if len(dep) == 0:
+            continue
+
+        vprint(f'[INFO] - Installing 3rd party dependency {dep}', verbose)
+        print(f'[INFO] - If this gets stuck somehow, run the script in sudo mode ')
+        import subprocess
+        subprocess.check_output(['sudo', 'snap', 'install', dep])
+        vprint(f'[INFO] - 3rd party dependency {dep} is installed', verbose)
+
